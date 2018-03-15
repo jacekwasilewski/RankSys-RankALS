@@ -96,14 +96,14 @@ public class RankALSFactorizer<U, I> extends ALSFactorizer<U, I> {
             DoubleMatrix1D pu = p.viewRow(uidx);
             DoubleMatrix1D su = q.zMult(pu, null);
             return data.getUidxPreferences(uidx).mapToDouble(iv -> {
-                double rui = iv.v;
-                double sui = su.getQuick(iv.idx);
+                double rui = iv.v2;
+                double sui = su.getQuick(iv.v1);
                 double diffi = rui - sui;
                 return data.getUidxPreferences(uidx).mapToDouble(jv -> {
-                    double ruj = jv.v;
-                    double suj = su.getQuick(jv.idx);
+                    double ruj = jv.v2;
+                    double suj = su.getQuick(jv.v1);
                     double diffj = ruj - suj;
-                    return s.getQuick(jv.idx) * (diffi - diffj) * (diffi - diffj);
+                    return s.getQuick(jv.v1) * (diffi - diffj) * (diffi - diffj);
                 }).sum();
             }).sum();
         }).sum();
@@ -125,8 +125,8 @@ public class RankALSFactorizer<U, I> extends ALSFactorizer<U, I> {
         data.getUidxWithPreferences().parallel().forEach(uidx -> {
             one_bar.setQuick(uidx, data.numItems(uidx));
             data.getUidxPreferences(uidx).forEach(iv -> {
-                int iidx = iv.idx;
-                double rui = iv.v;
+                int iidx = iv.v1;
+                double rui = iv.v2;
 
                 double si = s.getQuick(iidx);
                 r_tilde.setQuick(uidx, r_tilde.getQuick(uidx) + si * rui);
@@ -157,8 +157,8 @@ public class RankALSFactorizer<U, I> extends ALSFactorizer<U, I> {
             DoubleMatrix1D b_tilde = new DenseDoubleMatrix1D(K);
 
             data.getUidxPreferences(uidx).forEach(iv -> {
-                int iidx = iv.idx;
-                double rui = iv.v;
+                int iidx = iv.v1;
+                double rui = iv.v2;
                 DoubleMatrix1D qi = q.viewRow(iidx);
 
                 DoubleMatrix2D qq = Algebra.DEFAULT.multOuter(qi, qi, null);
@@ -211,7 +211,7 @@ public class RankALSFactorizer<U, I> extends ALSFactorizer<U, I> {
 
             DoubleMatrix1D q_bar = new DenseDoubleMatrix1D(K);
             data.getUidxPreferences(uidx).forEach(iv -> {
-                q_bar.assign(q.viewRow(iv.idx), (x, y) -> x + y);
+                q_bar.assign(q.viewRow(iv.v1), (x, y) -> x + y);
             });
 
             DoubleMatrix2D p_p = Algebra.DEFAULT.multOuter(pu, pu, null);
@@ -229,9 +229,9 @@ public class RankALSFactorizer<U, I> extends ALSFactorizer<U, I> {
             DoubleMatrix1D b_bar_bar = new DenseDoubleMatrix1D(K);
 
             data.getIidxPreferences(iidx).forEach(uv -> {
-                int uidx = uv.idx;
+                int uidx = uv.v1;
                 DoubleMatrix1D pu = p.viewRow(uidx);
-                double rui = uv.v;
+                double rui = uv.v2;
 
                 A_bar.assign(Algebra.DEFAULT.multOuter(pu, pu, null), (x, y) -> x + y);
 
